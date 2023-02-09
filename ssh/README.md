@@ -7,7 +7,6 @@ A [Go(Golang)](https://golang.org/) package to provide a simple abstraction arou
 ## Resources
 
 * [Features](#features)
-* [Installation](#installation)
 * [Usage](#usage)
 	* [Authentication with password](#authentication-with-password)
 	* [Authentication with key with passphrase](#authentication-with-key-with-passphrase)
@@ -27,14 +26,6 @@ A [Go(Golang)](https://golang.org/) package to provide a simple abstraction arou
 - [x] Supports running remote commands.
 - [x] Supports getting an interactive shell.
 - [x] Supports files upload and download.
-
-## Installation
-
-Install [ssh](https://github.com/hueristiq/ssh) as you normally would for any Go package:
-
-```bash
-go get github.com/hueristiq/ssh
-```
 
 ## Usage
 
