@@ -1,1 +1,3 @@
 # Hueristiq's Go Utilities
+
+![maintenance](https://img.shields.io/badge/maintained%3F-yes-0040ff.svg) [![open issues](https://img.shields.io/github/issues-raw/hueristiq/hqgoutils.svg?style=flat&color=0040ff)](https://github.com/hueristiq/hqgoutils/issues?q=is:issue+is:open) [![closed issues](https://img.shields.io/github/issues-closed-raw/hueristiq/hqgoutils.svg?style=flat&color=0040ff)](https://github.com/hueristiq/hqgoutils/issues?q=is:issue+is:closed) [![contribution](https://img.shields.io/badge/contributions-welcome-0040ff.svg)](https://github.com/hueristiq/hqgoutils)
