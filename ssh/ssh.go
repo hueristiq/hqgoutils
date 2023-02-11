@@ -86,12 +86,45 @@ CREATE_CLIENT:
 
 // Run runs cmd on the remote host.
 func (client *Client) Run(command *Command) (err error) {
-	session, err := client.SSH.NewSession()
+	var (
+		session        *ssh.Session
+		stdin          io.WriteCloser
+		stdout, stderr io.Reader
+	)
+
+	session, err = client.SSH.NewSession()
 	if err != nil {
 		return
 	}
 
 	defer session.Close()
+
+	if command.Stdin != nil {
+		stdin, err = session.StdinPipe()
+		if err != nil {
+			return
+		}
+
+		go io.Copy(stdin, command.Stdin)
+	}
+
+	if command.Stdout != nil {
+		stdout, err = session.StdoutPipe()
+		if err != nil {
+			return
+		}
+
+		go io.Copy(command.Stdout, stdout)
+	}
+
+	if command.Stderr != nil {
+		stderr, err = session.StderrPipe()
+		if err != nil {
+			return
+		}
+
+		go io.Copy(command.Stderr, stderr)
+	}
 
 	for variable, value := range command.ENV {
 		if err = session.Setenv(variable, value); err != nil {
@@ -104,42 +137,15 @@ func (client *Client) Run(command *Command) (err error) {
 		term = "xterm-256color"
 	}
 
-	modes := ssh.TerminalModes{
+	termmodes := ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
 		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
 		ssh.OPOST:         1,     // Enable output processing.
 	}
 
-	if err = session.RequestPty(term, 40, 80, modes); err != nil {
+	if err = session.RequestPty(term, 40, 80, termmodes); err != nil {
 		return
-	}
-
-	if command.Stdin != nil {
-		stdin, err := session.StdinPipe()
-		if err != nil {
-			return err
-		}
-
-		go io.Copy(stdin, command.Stdin)
-	}
-
-	if command.Stdout != nil {
-		stdout, err := session.StdoutPipe()
-		if err != nil {
-			return err
-		}
-
-		go io.Copy(command.Stdout, stdout)
-	}
-
-	if command.Stderr != nil {
-		stderr, err := session.StderrPipe()
-		if err != nil {
-			return err
-		}
-
-		go io.Copy(command.Stderr, stderr)
 	}
 
 	if err = session.Run(command.CMD); err != nil {
@@ -151,16 +157,31 @@ func (client *Client) Run(command *Command) (err error) {
 
 // Shell starts a login shell on the remote host.
 func (client *Client) Shell() (err error) {
-	session, err := client.SSH.NewSession()
+	var (
+		session *ssh.Session
+	)
+
+	session, err = client.SSH.NewSession()
 	if err != nil {
 		return
 	}
 
 	defer session.Close()
 
+	session.Stdin = os.Stdin
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
 	term := os.Getenv("TERM")
 	if term == "" {
 		term = "xterm-256color"
+	}
+
+	termmodes := ssh.TerminalModes{
+		ssh.ECHO:          0,     // disable echoing
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+		ssh.OPOST:         1,     // Enable output processing.
 	}
 
 	fd := int(os.Stdin.Fd())
@@ -177,20 +198,9 @@ func (client *Client) Shell() (err error) {
 		return
 	}
 
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          0,     // disable echoing
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-		ssh.OPOST:         1,     // Enable output processing.
-	}
-
-	if err = session.RequestPty(term, height, width, modes); err != nil {
+	if err = session.RequestPty(term, height, width, termmodes); err != nil {
 		return
 	}
-
-	session.Stdin = os.Stdin
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
 
 	if err = session.Shell(); err != nil {
 		return

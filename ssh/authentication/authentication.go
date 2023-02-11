@@ -4,10 +4,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Authentication represents ssh auth methods.
 type Authentication []ssh.AuthMethod
 
-// Password returns password auth method.
 func Password(password string) (authentication Authentication) {
 	authentication = Authentication{
 		ssh.Password(password),
@@ -16,7 +14,6 @@ func Password(password string) (authentication Authentication) {
 	return
 }
 
-// KeyWithPassphrase returns key with a passphrase auth method.
 func KeyWithPassphrase(privateKey, passphrase string) (authentication Authentication, err error) {
 	var signer ssh.Signer
 
@@ -32,7 +29,6 @@ func KeyWithPassphrase(privateKey, passphrase string) (authentication Authentica
 	return
 }
 
-// KeyWithoutPassphrase returns key without a passphrase auth method.
 func KeyWithoutPassphrase(privateKey string) (authentication Authentication, err error) {
 	var signer ssh.Signer
 
