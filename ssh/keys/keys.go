@@ -14,31 +14,59 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Read
-func Read(keyPair string) (string, string, error) {
-	_, err := os.Stat(keyPair)
+func Read(path string) (priv string, pub string, err error) {
+	var (
+		stats           os.FileInfo
+		privBuf, pubBUf []byte
+	)
+
+	stats, err = os.Stat(path)
 	if err != nil {
-		return "", "", err
+		err = fmt.Errorf("failed reading private key: %s", err)
+
+		return
 	}
 
-	priv, err := ioutil.ReadFile(keyPair)
-	if err != nil {
-		return "", "", err
+	if stats.IsDir() {
+		err = fmt.Errorf("failed reading private key: %s is a directory!", path)
+
+		return
 	}
 
-	pub, err := ioutil.ReadFile(keyPair + ".pub")
+	privBuf, err = ioutil.ReadFile(path)
 	if err != nil {
-		return "", "", err
+		err = fmt.Errorf("failed reading private key: %s", err)
+
+		return
 	}
 
-	return string(pub), string(priv), nil
+	priv = string(privBuf)
+
+	pubBUf, err = ioutil.ReadFile(path + ".pub")
+	if err != nil {
+		err = fmt.Errorf("failed reading public key: %s", err)
+
+		return
+	}
+
+	pub = string(pubBUf)
+
+	return
 }
 
-// Generate
-func Generate() (string, string, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+func Generate() (priv string, pub string, err error) {
+	var (
+		privateKey *rsa.PrivateKey
+		publicKey  ssh.PublicKey
+		privBuf    bytes.Buffer
+		pubBUf     []byte
+	)
+
+	privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return "", "", err
+		err = fmt.Errorf("failed generating private key: %s", err)
+
+		return
 	}
 
 	privateKeyPEM := &pem.Block{
@@ -46,47 +74,54 @@ func Generate() (string, string, error) {
 		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 	}
 
-	var private bytes.Buffer
+	if err = pem.Encode(&privBuf, privateKeyPEM); err != nil {
+		err = fmt.Errorf("failed encoding private key: %s", err)
 
-	if err := pem.Encode(&private, privateKeyPEM); err != nil {
-		return "", "", err
+		return
 	}
 
-	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	priv = privBuf.String()
+
+	publicKey, err = ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
-		return "", "", err
+		err = fmt.Errorf("failed generating public key: %s", err)
+
+		return
 	}
 
-	public := ssh.MarshalAuthorizedKey(pub)
+	pubBUf = ssh.MarshalAuthorizedKey(publicKey)
+	pub = string(pubBUf)
 
-	return string(public), private.String(), nil
+	return
 }
 
-// ReadOrGenerate
-func ReadOrGenerate(keyPairName string) (string, string, error) {
-	pub, priv, err := Read(keyPairName)
+func ReadOrGenerate(path string) (priv string, pub string, err error) {
+	pub, priv, err = Read(path)
 	if err != nil {
 		goto GENERATE
 	} else {
-		return string(pub), string(priv), nil
+		return
 	}
 
 GENERATE:
 	pub, priv, err = Generate()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate keys - %s", err)
+		err = fmt.Errorf("failed generating keys: %s", err)
+
+		return
 	}
 
-	if err = Write(keyPairName, pub, priv); err != nil {
-		return "", "", fmt.Errorf("failed to write file - %s", err)
+	if err = Write(path, pub, priv); err != nil {
+		err = fmt.Errorf("failed writing keys: %s", err)
+
+		return
 	}
 
-	return pub, priv, nil
+	return
 }
 
-// Write
-func Write(keyPairName, pub, priv string) (err error) {
-	directory := filepath.Dir(keyPairName)
+func Write(path, pub, priv string) (err error) {
+	directory := filepath.Dir(path)
 
 	if _, err = os.Stat(directory); err != nil {
 		if os.IsNotExist(err) {
@@ -100,11 +135,11 @@ func Write(keyPairName, pub, priv string) (err error) {
 		}
 	}
 
-	if err = ioutil.WriteFile(keyPairName, []byte(priv), 0600); err != nil {
+	if err = ioutil.WriteFile(path, []byte(priv), 0600); err != nil {
 		return
 	}
 
-	if err = ioutil.WriteFile(keyPairName+".pub", []byte(pub), 0644); err != nil {
+	if err = ioutil.WriteFile(path+".pub", []byte(pub), 0644); err != nil {
 		return
 	}
 
