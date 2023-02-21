@@ -1,4 +1,4 @@
-# ssh
+# hqgoutils/ssh
 
 A [Go(Golang)](https://golang.org/) package to provide a simple abstraction around [ssh](https://pkg.go.dev/golang.org/x/crypto/ssh) and [sftp](https://pkg.go.dev/github.com/pkg/sftp) packages.
 
@@ -25,6 +25,11 @@ A [Go(Golang)](https://golang.org/) package to provide a simple abstraction arou
 - [x] Supports getting an interactive shell.
 - [x] Supports files upload and download.
 
+## Installation
+
+```
+go get -v -u github.com/hueristiq/hqgoutils/ssh
+```
 ## Usage
 
 ### Authentication with password
