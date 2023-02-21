@@ -1,17 +1,12 @@
 package url
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
 	"golang.org/x/net/publicsuffix"
 )
-
-// Options represents the input to the Parse() function.
-type Options struct {
-	URL           string
-	DefaultScheme string
-}
 
 // A URL represents a parsed URL (technically, a URI reference).
 //
@@ -39,7 +34,7 @@ type URL struct {
 	// RawFragment string    // encoded fragment hint (see EscapedFragment method)
 	Domain      string // e.g. sub.example.com
 	ETLDPlusOne string // e.g. example.com
-	SubDomain   string // e.g. sub
+	Subdomain   string // e.g. sub
 	RootDomain  string // e.g. example
 	TLD         string // e.g. com
 	Port        string // e.g. 8080
@@ -48,21 +43,22 @@ type URL struct {
 // Parse parses a raw url into a URL structure.
 //
 // It uses the  `net/url`'s Parse() internally, but it slightly changes its behavior:
-// 1. It forces the default scheme if the url doesnt have a scheme and port to http
-// 2. It favors absolute paths over relative ones, thus "example.com"
-//    is parsed into url.Host instead of url.Path.
-// 3. It lowercases the Host (not only the Scheme).
-func Parse(options Options) (parsedURL *URL, err error) {
-	rawURL := options.URL
+//  1. It forces the default scheme if the url doesnt have a scheme and port to http
+//  2. It favors absolute paths over relative ones, thus "example.com"
+//     is parsed into url.Host instead of url.Path.
+//  3. It lowercases the Host (not only the Scheme).
+func Parse(rawURL string) (parsedURL *URL, err error) {
+	var (
+		defaultScheme string = "http"
+	)
 
-	if options.DefaultScheme != "" {
-		rawURL = DefaultScheme(rawURL, options.DefaultScheme)
-	}
-
+	rawURL = DefaultScheme(rawURL, defaultScheme)
 	parsedURL = &URL{}
 
 	parsedURL.URL, err = url.Parse(rawURL)
 	if err != nil {
+		err = fmt.Errorf("[hqgoutils/url] %s", err)
+
 		return
 	}
 
@@ -80,6 +76,8 @@ func Parse(options Options) (parsedURL *URL, err error) {
 	// ETLDPlusOne
 	parsedURL.ETLDPlusOne, err = publicsuffix.EffectiveTLDPlusOne(parsedURL.Domain)
 	if err != nil {
+		err = fmt.Errorf("[hqgoutils/url] %s", err)
+
 		return
 	}
 
@@ -90,7 +88,7 @@ func Parse(options Options) (parsedURL *URL, err error) {
 
 	// Subdomain
 	if rest := strings.TrimSuffix(parsedURL.Domain, "."+parsedURL.ETLDPlusOne); rest != parsedURL.Domain {
-		parsedURL.SubDomain = rest
+		parsedURL.Subdomain = rest
 	}
 
 	return
