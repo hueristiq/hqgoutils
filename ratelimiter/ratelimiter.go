@@ -1,3 +1,4 @@
+// Package ratelimiter provides an implementation of client rate limiting in Go.
 package ratelimiter
 
 import (
@@ -5,18 +6,29 @@ import (
 	"time"
 )
 
+// RateLimiter implements rate limiting to limit the number of requests made within a certain time period.
 type RateLimiter struct {
-	RPM  int        // Requests per minute allowed
-	ToLR time.Time  // Time of last request
-	lock sync.Mutex // Mutex to ensure thread-safe access to state
+	requestsPerMinute     int
+	minimumDelayInSeconds int
+	timeOfLastRequest     time.Time
+	lock                  sync.Mutex
 }
 
-// New creates a new RateLimiter with the specified requests per minute limit.
-func New(RPM int) *RateLimiter {
-	return &RateLimiter{
-		RPM:  RPM,
-		ToLR: time.Now(),
+// Options implements the structure of RateLimiter creation options.
+type Options struct {
+	RequestsPerMinute     int
+	MinimumDelayInSeconds int
+}
+
+// New creates a new *RateLimiter with the specified *Options.
+func New(options *Options) (limiter *RateLimiter) {
+	limiter = &RateLimiter{
+		requestsPerMinute:     options.RequestsPerMinute,
+		minimumDelayInSeconds: options.MinimumDelayInSeconds,
+		timeOfLastRequest:     time.Now(),
 	}
+
+	return
 }
 
 // Wait waits until the next request can be made within the rate limit.
@@ -25,15 +37,20 @@ func (limiter *RateLimiter) Wait() {
 	defer limiter.lock.Unlock()
 
 	// Calculate the minimum duration to wait before allowing the next request.
-	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.RPM))
-	elapsed := time.Since(limiter.ToLR)
+	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.requestsPerMinute))
+	elapsed := time.Since(limiter.timeOfLastRequest)
 	remaining := interval - elapsed
 
 	if remaining > 0 {
-		// Sleep for the remaining duration to ensure we wait until the rate limit allows the next request.
-		time.Sleep(remaining)
+		// Sleep for the remaining or minimum delay duration to ensure we wait until the rate limit allows the next request.
+		timeToSleep := remaining
+		if limiter.minimumDelayInSeconds > int(timeToSleep) {
+			timeToSleep = time.Duration(limiter.minimumDelayInSeconds) * time.Second
+		}
+
+		time.Sleep(timeToSleep)
 	}
 
 	// Update the last access time to the current time.
-	limiter.ToLR = time.Now()
+	limiter.timeOfLastRequest = time.Now()
 }

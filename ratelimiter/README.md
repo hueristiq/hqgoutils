@@ -24,8 +24,12 @@ import (
 )
 
 func main() {
-	// Create a new RateLimiter with a limit of 60 requests per minute.
-	limiter := ratelimiter.New(60)
+	options := &ratelimiter.Options{
+		RequestsPerMinute: 40,
+		MinimumDelayInSeconds: 2,
+	}
+
+	limiter := ratelimiter.New(options)
 
 	// Make 10 requests and ensure that they are rate limited.
 	for i := 1; i <= 10; i++ {
