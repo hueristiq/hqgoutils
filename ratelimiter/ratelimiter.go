@@ -5,18 +5,29 @@ import (
 	"time"
 )
 
+// RateLimiter implements rate limiting to limit the number of requests made within a certain time period.
 type RateLimiter struct {
-	RPM  int        // Requests per minute allowed
-	ToLR time.Time  // Time of last request
-	lock sync.Mutex // Mutex to ensure thread-safe access to state
+	requestsPerMinute     int
+	minimumDelayInSeconds int
+	timeOfLastRequest     time.Time
+	lock                  sync.Mutex
 }
 
-// New creates a new RateLimiter with the specified requests per minute limit.
-func New(RPM int) *RateLimiter {
-	return &RateLimiter{
-		RPM:  RPM,
-		ToLR: time.Now(),
+// Options implements the structure of RateLimiter creation options.
+type Options struct {
+	RequestsPerMinute     int
+	MinimumDelayInSeconds int
+}
+
+// New creates a new *RateLimiter with the specified *Options.
+func New(options *Options) (limiter *RateLimiter) {
+	limiter = &RateLimiter{
+		requestsPerMinute:     options.RequestsPerMinute,
+		minimumDelayInSeconds: options.MinimumDelayInSeconds,
+		timeOfLastRequest:     time.Now(),
 	}
+
+	return
 }
 
 // Wait waits until the next request can be made within the rate limit.
@@ -24,16 +35,22 @@ func (limiter *RateLimiter) Wait() {
 	limiter.lock.Lock()
 	defer limiter.lock.Unlock()
 
-	// Calculate the minimum duration to wait before allowing the next request.
-	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.RPM))
-	elapsed := time.Since(limiter.ToLR)
-	remaining := interval - elapsed
+	// calculate the minimum interval (in time.Duration units) that should be enforced between requests in order to comply with the rate limiting policy.
+	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.requestsPerMinute))
+	// calculate the time that has elapsed since the last request was made, based on the timeOfLastRequest value of the limiter object.
+	timeSinceLastRequest := time.Since(limiter.timeOfLastRequest)
+	// calculate the amount of time that the program needs to sleep before making another request, in order to comply with the rate limiting policy.
+	timeToSleep := interval - timeSinceLastRequest
 
-	if remaining > 0 {
-		// Sleep for the remaining duration to ensure we wait until the rate limit allows the next request.
-		time.Sleep(remaining)
+	minimumDelayInNanoseconds := time.Duration(limiter.minimumDelayInSeconds) * time.Second
+
+	if timeSinceLastRequest < minimumDelayInNanoseconds {
+		timeToSleep = minimumDelayInNanoseconds - timeSinceLastRequest
 	}
 
+	// sleep
+	time.Sleep(timeToSleep)
+
 	// Update the last access time to the current time.
-	limiter.ToLR = time.Now()
+	limiter.timeOfLastRequest = time.Now()
 }
