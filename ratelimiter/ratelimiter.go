@@ -35,12 +35,17 @@ func (limiter *RateLimiter) Wait() {
 	limiter.lock.Lock()
 	defer limiter.lock.Unlock()
 
-	// calculate the minimum interval (in time.Duration units) that should be enforced between requests in order to comply with the rate limiting policy.
-	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.requestsPerMinute))
+	var timeToSleep time.Duration
+
 	// calculate the time that has elapsed since the last request was made, based on the timeOfLastRequest value of the limiter object.
 	timeSinceLastRequest := time.Since(limiter.timeOfLastRequest)
-	// calculate the amount of time that the program needs to sleep before making another request, in order to comply with the rate limiting policy.
-	timeToSleep := interval - timeSinceLastRequest
+
+	if limiter.requestsPerMinute > 0 {
+		// calculate the minimum interval (in time.Duration units) that should be enforced between requests in order to comply with the rate limiting policy.
+		interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.requestsPerMinute))
+		// calculate the amount of time that the program needs to sleep before making another request, in order to comply with the rate limiting policy.
+		timeToSleep = interval - timeSinceLastRequest
+	}
 
 	minimumDelayInNanoseconds := time.Duration(limiter.minimumDelayInSeconds) * time.Second
 
