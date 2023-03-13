@@ -1,4 +1,3 @@
-// Package ratelimiter provides an implementation of client rate limiting in Go.
 package ratelimiter
 
 import (
@@ -36,20 +35,21 @@ func (limiter *RateLimiter) Wait() {
 	limiter.lock.Lock()
 	defer limiter.lock.Unlock()
 
-	// Calculate the minimum duration to wait before allowing the next request.
+	// calculate the minimum interval (in time.Duration units) that should be enforced between requests in order to comply with the rate limiting policy.
 	interval := time.Duration(time.Minute.Nanoseconds() / int64(limiter.requestsPerMinute))
-	elapsed := time.Since(limiter.timeOfLastRequest)
-	remaining := interval - elapsed
+	// calculate the time that has elapsed since the last request was made, based on the timeOfLastRequest value of the limiter object.
+	timeSinceLastRequest := time.Since(limiter.timeOfLastRequest)
+	// calculate the amount of time that the program needs to sleep before making another request, in order to comply with the rate limiting policy.
+	timeToSleep := interval - timeSinceLastRequest
 
-	if remaining > 0 {
-		// Sleep for the remaining or minimum delay duration to ensure we wait until the rate limit allows the next request.
-		timeToSleep := remaining
-		if limiter.minimumDelayInSeconds > int(timeToSleep) {
-			timeToSleep = time.Duration(limiter.minimumDelayInSeconds) * time.Second
-		}
+	minimumDelayInNanoseconds := time.Duration(limiter.minimumDelayInSeconds) * time.Second
 
-		time.Sleep(timeToSleep)
+	if timeSinceLastRequest < minimumDelayInNanoseconds {
+		timeToSleep = minimumDelayInNanoseconds - timeSinceLastRequest
 	}
+
+	// sleep
+	time.Sleep(timeToSleep)
 
 	// Update the last access time to the current time.
 	limiter.timeOfLastRequest = time.Now()
