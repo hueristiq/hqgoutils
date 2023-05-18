@@ -1,10 +1,24 @@
 package log
 
 import (
+	"github.com/hueristiq/hqgoutils/log/formatter"
 	"github.com/hueristiq/hqgoutils/log/levels"
+	"github.com/hueristiq/hqgoutils/log/writer"
 )
 
-// Print prints a string on screen without any extra labels.
+var (
+	DefaultLogger *Logger
+)
+
+func init() {
+	DefaultLogger = &Logger{}
+	DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	DefaultLogger.SetFormatter(formatter.NewCLI(&formatter.CLIOptions{
+		Colorize: true,
+	}))
+	DefaultLogger.SetWriter(writer.NewCLI())
+}
+
 func Print() (event *Event) {
 	event = &Event{
 		logger:   DefaultLogger,
@@ -15,7 +29,6 @@ func Print() (event *Event) {
 	return event
 }
 
-// Debug writes an error message on the screen with the default label
 func Debug() (event *Event) {
 	level := levels.Levels[levels.LevelDebug]
 
@@ -28,7 +41,6 @@ func Debug() (event *Event) {
 	return
 }
 
-// Info writes a info message on the screen with the default label
 func Info() (event *Event) {
 	level := levels.Levels[levels.LevelInfo]
 
@@ -41,7 +53,6 @@ func Info() (event *Event) {
 	return
 }
 
-// Warning writes a warning message on the screen with the default label
 func Warning() (event *Event) {
 	level := levels.Levels[levels.LevelWarning]
 
@@ -54,7 +65,6 @@ func Warning() (event *Event) {
 	return
 }
 
-// Error writes a error message on the screen with the default label
 func Error() (event *Event) {
 	level := levels.Levels[levels.LevelError]
 
@@ -67,7 +77,6 @@ func Error() (event *Event) {
 	return
 }
 
-// Fatal exits the program if we encounter a fatal error
 func Fatal() (event *Event) {
 	level := levels.Levels[levels.LevelFatal]
 
