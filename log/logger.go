@@ -9,35 +9,35 @@ import (
 	"github.com/hueristiq/hqgoutils/log/writer"
 )
 
-// Logger is the logger for logging structured data.
 type Logger struct {
 	formatter formatter.Formatter
-	writer    writer.Writer
 	maxLevel  levels.LevelInt
+	writer    writer.Writer
 }
 
-// SetMaxLevel sets the Logger's max logging level
-func (logger *Logger) SetMaxLevel(level levels.LevelStr) {
-	logger.maxLevel = levels.Levels[level]
-}
-
-// SetFormatter sets the Logger's formatter
 func (logger *Logger) SetFormatter(formatter formatter.Formatter) {
 	logger.formatter = formatter
 }
 
-// SetWriter sets the Logger's writer
+func (logger *Logger) SetMaxLevel(level levels.LevelStr) {
+	logger.maxLevel = levels.Levels[level]
+}
+
 func (logger *Logger) SetWriter(writer writer.Writer) {
 	logger.writer = writer
 }
 
-// Log logs an Event
 func (logger *Logger) Log(event *Event) {
-	if event.level > event.logger.maxLevel {
+	if event.level > logger.maxLevel {
 		return
 	}
 
-	if label, ok := event.metadata["label"]; !ok {
+	var (
+		ok    bool
+		label string
+	)
+
+	if _, ok = event.metadata["label"]; !ok {
 		labels := map[levels.LevelInt]string{
 			levels.Levels[levels.LevelFatal]:   "FTL",
 			levels.Levels[levels.LevelError]:   "ERR",
@@ -73,7 +73,6 @@ func (logger *Logger) Log(event *Event) {
 	}
 }
 
-// Print prints a string on screen without any extra labels.
 func (logger *Logger) Print() *Event {
 	event := &Event{
 		logger:   logger,
@@ -84,7 +83,6 @@ func (logger *Logger) Print() *Event {
 	return event
 }
 
-// Debug writes an error message on the screen with the default label
 func (logger *Logger) Debug() *Event {
 	level := levels.Levels[levels.LevelDebug]
 
@@ -97,7 +95,6 @@ func (logger *Logger) Debug() *Event {
 	return event
 }
 
-// Info writes a info message on the screen with the default label
 func (logger *Logger) Info() *Event {
 	level := levels.Levels[levels.LevelInfo]
 
@@ -110,7 +107,6 @@ func (logger *Logger) Info() *Event {
 	return event
 }
 
-// Warning writes a warning message on the screen with the default label
 func (logger *Logger) Warning() *Event {
 	level := levels.Levels[levels.LevelWarning]
 
@@ -123,7 +119,6 @@ func (logger *Logger) Warning() *Event {
 	return event
 }
 
-// Error writes a error message on the screen with the default label
 func (logger *Logger) Error() *Event {
 	level := levels.Levels[levels.LevelError]
 
@@ -136,7 +131,6 @@ func (logger *Logger) Error() *Event {
 	return event
 }
 
-// Fatal exits the program if we encounter a fatal error
 func (logger *Logger) Fatal() *Event {
 	level := levels.Levels[levels.LevelFatal]
 
