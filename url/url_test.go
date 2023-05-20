@@ -18,6 +18,17 @@ func TestParse(t *testing.T) {
 				Subdomain:   "sub",
 				TLD:         "com",
 				Port:        "8080",
+				Extension:   "",
+			},
+		},
+		{
+			input: "https://sub.example.com:8080/path/to/file.txt",
+			output: url.URL{
+				ETLDPlusOne: "example.com",
+				Subdomain:   "sub",
+				TLD:         "com",
+				Port:        "8080",
+				Extension:   "txt",
 			},
 		},
 	}

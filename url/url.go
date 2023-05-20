@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 	"net/url"
+	"path"
 	"strings"
 
 	"golang.org/x/net/publicsuffix"
@@ -18,14 +19,14 @@ import (
 //
 //	scheme:opaque[?query][#fragment]
 //
-// https://sub.example.com:8080
+// https://sub.example.com:8080/path/to/file.txt
 type URL struct {
 	*url.URL
 	// Scheme      string    // e.g https
 	// Opaque      string    // encoded opaque data
 	// User        *Userinfo // username and password information
 	// Host        string    // e.g. sub.example.com, sub.example.com:8080
-	// Path        string    // path (relative paths may omit leading slash)
+	// Path        string    // path (relative paths may omit leading slash) e.g /path/to/file.txt
 	// RawPath     string    // encoded path hint (see EscapedPath method)
 	// OmitHost    bool      // do not emit empty host (authority)
 	// ForceQuery  bool      // append a query ('?') even if RawQuery is empty
@@ -38,6 +39,7 @@ type URL struct {
 	RootDomain  string // e.g. example
 	TLD         string // e.g. com
 	Port        string // e.g. 8080
+	Extension   string // e.g. txt
 }
 
 // Parse parses a raw url into a URL structure.
@@ -90,6 +92,9 @@ func Parse(rawURL string) (parsedURL *URL, err error) {
 	if rest := strings.TrimSuffix(parsedURL.Domain, "."+parsedURL.ETLDPlusOne); rest != parsedURL.Domain {
 		parsedURL.Subdomain = rest
 	}
+
+	// Extension
+	parsedURL.Extension = path.Ext(parsedURL.Path)
 
 	return
 }
