@@ -8,65 +8,135 @@ import (
 
 func TestParse(t *testing.T) {
 	tests := []struct {
+		name   string
 		input  string
-		output url.URL
+		output *url.URL
+		err    error
 	}{
 		{
-			input: "https://sub.example.com:8080",
-			output: url.URL{
+			name:  "Test example URL",
+			input: "https://sub.example.com:8080/path/to/file.txt",
+			output: &url.URL{
+				Domain:      "sub.example.com",
 				ETLDPlusOne: "example.com",
 				Subdomain:   "sub",
+				RootDomain:  "example",
 				TLD:         "com",
 				Port:        "8080",
+				Extension:   ".txt",
 			},
+			err: nil,
 		},
 	}
 
 	for index := range tests {
-		test := tests[index]
+		tt := tests[index]
 
-		URL, err := url.Parse(test.input)
-		if err != nil {
-			t.Error(err)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := url.Parse(tt.input)
+			if err != nil {
+				t.Errorf("Parse(%q) returned error %v", tt.input, err)
+			}
 
-		if URL.ETLDPlusOne != test.output.ETLDPlusOne {
-			t.Errorf(`"%s": got "%s", want "%v"`, test.input, URL.ETLDPlusOne, test.output.ETLDPlusOne)
-		}
-
-		if URL.Subdomain != test.output.Subdomain {
-			t.Errorf(`"%s": got "%s", want "%v"`, test.input, URL.Subdomain, test.output.Subdomain)
-		}
-
-		if URL.TLD != test.output.TLD {
-			t.Errorf(`"%s": got "%s", want "%v"`, test.input, URL.TLD, test.output.TLD)
-		}
-
-		if URL.Port != test.output.Port {
-			t.Errorf(`"%s": got "%s", want "%v"`, test.input, URL.Port, test.output.Port)
-		}
+			if got.Domain != tt.output.Domain || got.ETLDPlusOne != tt.output.ETLDPlusOne || got.Subdomain != tt.output.Subdomain || got.RootDomain != tt.output.RootDomain || got.TLD != tt.output.TLD || got.Port != tt.output.Port || got.Extension != tt.output.Extension {
+				t.Errorf("Parse(%q) = %v, want %v", tt.input, got, tt.output)
+			}
+		})
 	}
 }
 
-func TestDefaultScheme(t *testing.T) {
+func TestAddDefaultScheme(t *testing.T) {
 	tests := []struct {
-		input  string
+		name   string
+		url    string
+		scheme string
 		output string
 	}{
-		{input: "localhost", output: "http://localhost"},
-		{input: "example.com", output: "http://example.com"},
-		{input: "https://example.com", output: "https://example.com"},
-		{input: "://example.com", output: "http://example.com"},
-		{input: "//example.com", output: "http://example.com"},
+		{
+			name:   "Case: localhost",
+			url:    "localhost",
+			scheme: "http",
+			output: "http://localhost",
+		},
+		{
+			name:   "Case: example.com",
+			url:    "example.com",
+			scheme: "http",
+			output: "http://example.com",
+		},
+		{
+			name:   "Case: //example.com",
+			url:    "//example.com",
+			scheme: "http",
+			output: "http://example.com",
+		},
+		{
+			name:   "Case: ://example.com",
+			url:    "://example.com",
+			scheme: "http",
+			output: "http://example.com",
+		},
+		{
+			name:   "Case: https://example.com",
+			url:    "https://example.com",
+			scheme: "http",
+			output: "https://example.com",
+		},
 	}
 
 	for index := range tests {
-		test := tests[index]
+		tt := tests[index]
 
-		URL := url.DefaultScheme(test.input, "http")
+		t.Run(tt.name, func(t *testing.T) {
+			got := url.AddDefaultScheme(tt.url, tt.scheme)
+			if got != tt.output {
+				t.Errorf("AddDefaultScheme(%q, %q) = %v, want %v", tt.url, tt.scheme, got, tt.output)
+			}
+		})
+	}
+}
 
-		if URL != test.output {
-			t.Errorf(`"%s": got "%s", want "%v"`, test.input, URL, test.output)
-		}
+func TestSplitHost(t *testing.T) {
+	tests := []struct {
+		name   string
+		host   string
+		domain string
+		port   string
+	}{
+		{
+			name:   "Case: localhost",
+			host:   "localhost",
+			domain: "localhost",
+			port:   "",
+		},
+		{
+			name:   "Case: example.com",
+			host:   "example.com",
+			domain: "example.com",
+			port:   "",
+		},
+		{
+			name:   "Case: localhost:8080",
+			host:   "localhost:8080",
+			domain: "localhost",
+			port:   "8080",
+		},
+		{
+			name:   "Case: example.com:8080",
+			host:   "example.com:8080",
+			domain: "example.com",
+			port:   "8080",
+		},
+	}
+
+	for index := range tests {
+		tt := tests[index]
+
+		t.Run(tt.name, func(t *testing.T) {
+			domain, port := url.SplitHost(tt.host)
+			if domain != tt.domain || port != tt.port {
+				t.Errorf("splitHost(%q) = %v, %v, want %v, %v", tt.host, domain, port, tt.domain, tt.port)
+			}
+		})
 	}
 }
