@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/logrusorgru/aurora/v3 v3.0.0
-	github.com/pkg/sftp v1.13.5
+	github.com/pkg/sftp v1.13.6
 	golang.org/x/crypto v0.9.0
 	golang.org/x/net v0.10.0
 	golang.org/x/term v0.8.0
