@@ -11,7 +11,7 @@ Hueristiq's Go utilities.
 
 ## Contribution
 
-[Issues](https://github.com/hueristiq/hqgoutils/issues) and [Pull Requests](https://github.com/hueristiq/hqgoutils/pulls) are welcome! Check out the [contribution guidelines.](./CONTRIBUTING.md)
+[Issues](https://github.com/hueristiq/hqgoutils/issues) and [Pull Requests](https://github.com/hueristiq/hqgoutils/pulls) are welcome! Check out the [contribution guidelines.](https://github.com/hueristiq/hqgoutils/blob/master/LICENSE)
 
 ## Licensing
 
